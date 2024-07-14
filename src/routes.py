@@ -250,3 +250,53 @@ def delete_employee(employee_id):
     db.session.commit()
     
     return jsonify(message="Employee deleted successfully!")
+
+@api.route("/employee/password-reset", methods=["POST"])
+def password_reset_request():
+    request_body = request.get_json()
+    
+    email = request_body.get("email")
+    
+    user = User.query.filter_by(email=email).first()
+    
+    if user is None:
+        return jsonify(message="User not found"), 404
+        
+    employee = Employee.query.filter_by(user_id=user.user_id).first()
+    
+    if employee is None:
+        return jsonify(message="Employee not found"), 404
+        
+    password_reset_token = create_access_token(identity=employee.employee_id)
+    
+    token = PasswordResetToken(employee_id=employee.employee_id, token=password_reset_token, expires_at=datetime.now(tz=timezone.utc) + timedelta(hours=24))
+    
+    db.session.add(token)
+    db.session.commit()
+    
+    send_email(url=f"{os.getenv('FRONT_URL')}/employee/password-reset?token={password_reset_token}", name=f"{employee.first_name} {employee.last_name}", recipient=email)
+    
+    return jsonify(message="Password reset link sent successfully!")
+
+@api.route("/employee/password-reset/<string:token>", methods=["POST"])
+def password_reset(token):
+    password_reset_token = PasswordResetToken.query.filter_by(token=token).first()
+    
+    if password_reset_token is None or password_reset_token.used or password_reset_token.expires_at < datetime.now(tz=timezone.utc):
+        return jsonify(message="Invalid or expired token"), 400
+        
+    request_body = request.get_json()
+    
+    password = request_body.get("password")
+    
+    password_hash = sha256(password.encode()).hexdigest()
+    
+    user = User.query.get(password_reset_token.employee_id)
+    
+    user.password_hash = password_hash
+    
+    password_reset_token.used = True
+    
+    db.session.commit()
+    
+    return jsonify(message="Password reset successfully!")

@@ -10,8 +10,6 @@ class User(db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     security_question_1 = db.Column(db.String(255))
     security_answer_1 = db.Column(db.String(255))
-    security_question_2 = db.Column(db.String(255))
-    security_answer_2 = db.Column(db.String(255))
     role = db.Column(db.String(50), nullable=False)  # 'admin' or 'employee'
     created_at = db.Column(db.DateTime, default=datetime.now(tz=timezone.utc))
 

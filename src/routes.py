@@ -56,15 +56,13 @@ def register_employee():
     password = request_body.get("password")
     security_question_1 = request_body.get("security_question_1")
     security_answer_1 = request_body.get("security_answer_1")
-    security_question_2 = request_body.get("security_question_2")
-    security_answer_2 = request_body.get("security_answer_2")
     
-    if not email or not password or not security_question_1 or not security_answer_1 or not security_question_2 or not security_answer_2:
+    if not email or not password or not security_question_1 or not security_answer_1:
         return jsonify(message="All fields are required"), 400
     
     password_hash = sha256(password.encode()).hexdigest()
     
-    user = User(email=email, password_hash=password_hash, security_question_1=security_question_1, security_answer_1=security_answer_1, security_question_2=security_question_2, security_answer_2=security_answer_2, role="employee")
+    user = User(email=email, password_hash=password_hash, security_question_1=security_question_1, security_answer_1=security_answer_1, role="employee")
     db.session.add(user)
     db.session.commit()
     db.session.refresh(user)
@@ -288,6 +286,18 @@ def password_reset(token):
     request_body = request.get_json()
     
     password = request_body.get("password")
+    
+    security_question_1 = request_body.get("security_question_1")
+    email = request_body.get("email")
+    
+    user = User.query.get(password_reset_token.user_id)
+    
+    if user.security_question_1 != security_question_1:
+        return jsonify(message="Invalid security answer"), 400
+    
+    if user.email != email:
+        return jsonify(message="Invalid email"), 400
+
     
     password_hash = sha256(password.encode()).hexdigest()
     

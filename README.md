@@ -38,8 +38,6 @@ This document describes the PayTrack API functionalities and functionalities acc
 {
   "security_question_1": "What is your mother's maiden name?",
   "security_answer_1": "your_answer_here",
-  "security_question_2": "What was your childhood nickname?",
-  "security_answer_2": "your_answer_here",
   "email": "employee@paytrack.com",
   "password": "your_password_here"
 }

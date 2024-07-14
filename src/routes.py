@@ -226,28 +226,35 @@ def update_employee(employee_id):
     
     return jsonify(message="Employee updated successfully!")
 
+
 @api.route("/manage/employee/<int:employee_id>", methods=["DELETE"])
 @jwt_required()
 def delete_employee(employee_id):
     current_user_id = get_jwt_identity()
-    
+
     user = User.query.get(current_user_id)
-    
+
     if user.role != "admin":
         return jsonify(message="You are not authorized to perform this action"), 403
-        
+
     employee = Employee.query.get(employee_id)
-    
+
     if employee is None:
         return jsonify(message="Employee not found"), 404
-    
+
     employee_user = User.query.get(employee.user_id)
-        
-    db.session.delete(employee)
-    db.session.delete(employee_user)
-    db.session.commit()
-    
-    return jsonify(message="Employee deleted successfully!")
+
+    try:
+        if employee_user:
+            db.session.delete(employee_user)
+
+        db.session.delete(employee)
+        db.session.commit()
+
+        return jsonify(message="Employee deleted successfully!")
+    except Exception as e:
+        db.session.rollback()
+        return jsonify(message=f"Failed to delete employee: {str(e)}"), 500
 
 @api.route("/employee/password-reset", methods=["POST"])
 def password_reset_request():

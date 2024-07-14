@@ -37,6 +37,7 @@ class Employee(db.Model):
     position = db.Column(db.String(100))
     department = db.Column(db.String(100))
     start_date = db.Column(db.Date)
+    payrolls = db.relationship('Payroll', backref='employee', lazy=True)
 
     def serialize(self):
         return {
@@ -49,7 +50,8 @@ class Employee(db.Model):
             'phone': self.phone,
             'position': self.position,
             'department': self.department,
-            'start_date': self.start_date.isoformat() if self.start_date else None
+            'start_date': self.start_date.isoformat() if self.start_date else None,
+            'payrolls': [payroll.serialize() for payroll in self.payrolls]
         }
 
 

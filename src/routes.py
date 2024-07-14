@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-from src.models import db, User, Employee, PasswordResetToken, Payroll
+from src.models import db, User, Employee, PasswordResetToken, Payroll, Attendance
 from flask_jwt_extended import create_access_token
 from flask_jwt_extended import get_jwt_identity
 from flask_jwt_extended import jwt_required
@@ -150,7 +150,7 @@ def add_employee():
     
     return jsonify(message="Employee added successfully!"), 201
 
-@api.route("/mangage/employee/<int:employee_id>", methods=["GET"])
+@api.route("/manage/employee/<int:employee_id>", methods=["GET"])
 @jwt_required()
 def get_employee(employee_id):
     current_user_id = get_jwt_identity()
@@ -328,3 +328,176 @@ def create_payroll(employee_id):
     new_payroll = Payroll(employee_id=employee_id, pay_date=pay_date, hours_worked=hours_worked,
                           hourly_rate=hourly_rate, tax_deduction=tax_deduction, gross_salary=gross_salary, net_salary=net_salary)
     
+    db.session.add(new_payroll)
+    db.session.commit()
+    
+    return jsonify(message="Payroll created successfully!"), 201
+
+@api.route("/employee/payroll", methods=["GET"])
+@jwt_required()
+def get_payroll():
+    employee_id = get_jwt_identity()
+    
+    payrolls = Payroll.query.filter_by(employee_id=employee_id).all()
+    
+    return jsonify([payroll.serialize() for payroll in payrolls])
+
+@api.route("/employee/payroll/<int:payroll_id>", methods=["GET"])
+@jwt_required()
+def get_payroll_by_id(payroll_id):
+    employee_id = get_jwt_identity()
+    
+    payroll = Payroll.query.get(payroll_id)
+    
+    if payroll is None or payroll.employee_id != employee_id:
+        return jsonify(message="Payroll not found"), 404
+        
+    return jsonify(payroll.serialize())
+
+@api.route("/employee/payroll/<int:payroll_id>", methods=["PUT"])
+@jwt_required()
+def update_payroll(payroll_id):
+    admin_id = get_jwt_identity()
+    
+    user = User.query.get(admin_id)
+    
+    if user.role != "admin":
+        return jsonify(message="You are not authorized to perform this action"), 403
+    
+    payroll = Payroll.query.get(payroll_id)
+    
+    if payroll is None:
+        return jsonify(message="Payroll not found"), 404
+    
+    request_body = request.get_json()
+    
+    pay_date = request_body.get("pay_date")
+    hours_worked = request_body.get("hours_worked")
+    hourly_rate = request_body.get("hourly_rate")
+    tax_deduction = request_body.get("tax_deduction")
+    gross_salary = hours_worked * hourly_rate
+    net_salary = gross_salary - tax_deduction
+    
+    if pay_date:
+        payroll.pay_date = pay_date
+        
+    if hours_worked:
+        payroll.hours_worked = hours_worked
+        
+    if hourly_rate:
+        payroll.hourly_rate = hourly_rate
+        
+    if tax_deduction:
+        payroll.tax_deduction = tax_deduction
+    
+    if hours_worked or hourly_rate or tax_deduction:
+        payroll.gross_salary = gross_salary
+        payroll.net_salary = net_salary
+    
+    db.session.commit()
+    
+    return jsonify(message="Payroll updated successfully!")
+
+@api.route("/employee/payroll/<int:payroll_id>", methods=["DELETE"])
+@jwt_required()
+def delete_payroll(payroll_id):
+    admin_id = get_jwt_identity()
+    
+    user = User.query.get(admin_id)
+    
+    if user.role != "admin":
+        return jsonify(message="You are not authorized to perform this action"), 403
+    
+    payroll = Payroll.query.get(payroll_id)
+    
+    if payroll is None:
+        return jsonify(message="Payroll not found"), 404
+    
+    db.session.delete(payroll)
+    db.session.commit()
+    
+    return jsonify(message="Payroll deleted successfully!")
+
+@api.route("/employee/dashboard", mehtods=["GET"])
+@jwt_required()
+def employee_dashboard():
+    employee_id = get_jwt_identity()
+    
+    employee = Employee.query.get(employee_id)
+    
+    if employee is None:
+        return jsonify(message="Employee not found"), 404
+        
+    return jsonify(employee.serialize())
+
+@api.route("/employee/attendance", methods=["GET"])
+@jwt_required()
+def get_attendance():
+    employee_id = get_jwt_identity()
+    
+    attendances = Attendance.query.filter_by(employee_id=employee_id).all()
+    
+    return jsonify([attendance.serialize() for attendance in attendances])
+
+@api.route("/employee/attendance/<int:attendance_id>", methods=["GET"])
+@jwt_required()
+def get_attendance_by_id(attendance_id):
+    employee_id = get_jwt_identity()
+    
+    attendance = Attendance.query.get(attendance_id)
+    
+    if attendance is None or attendance.employee_id != employee_id:
+        return jsonify(message="Attendance not found"), 404
+        
+    return jsonify(attendance.serialize())
+
+@api.route("/employee/attendance", methods=["POST"])
+@jwt_required()
+def create_attendance():
+    employee_id = get_jwt_identity()
+    
+    request_body = request.get_json()
+    
+    date = request_body.get("date")
+    status = request_body.get("status")
+    
+    if not date or not status:
+        return jsonify(message="All fields are required"), 400
+    
+    if status not in ["present", "absent", "leave"]:
+        return jsonify(message="Invalid status"), 400
+    
+    new_attendance = Attendance(employee_id=employee_id, date=date, status=status)
+    
+    db.session.add(new_attendance)
+    db.session.commit()
+    
+    return jsonify(message="Attendance created successfully!"), 201
+
+@api.route("/employee/attendance/<int:attendance_id>", methods=["PUT"])
+@jwt_required()
+def update_attendance(attendance_id):
+    employee_id = get_jwt_identity()
+    
+    attendance = Attendance.query.get(attendance_id)
+    
+    if attendance is None or attendance.employee_id != employee_id:
+        return jsonify(message="Attendance not found"), 404
+    
+    request_body = request.get_json()
+    
+    date = request_body.get("date")
+    status = request_body.get("status")
+    
+    if date:
+        attendance.date = date
+        
+    if status and status in ["present", "absent", "leave"]:
+        attendance.status = status
+    
+    if status and status not in ["present", "absent", "leave"]:
+        return jsonify(message="Invalid status"), 400
+        
+    db.session.commit()
+    
+    return jsonify(message="Attendance updated successfully!")

@@ -1,0 +1,26 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+flask = "*"
+flask-sqlalchemy = "*"
+flask-jwt-extended = "*"
+flask-admin = "*"
+flask-basicauth = "*"
+gunicorn = "*"
+python-dotenv = "*"
+flask-migrate = "*"
+pymysql = "*"
+
+[dev-packages]
+
+[scripts]
+start = "flask -A app run --debug --host=0.0.0.0"
+init = "flask db init" 
+migrate = "flask db migrate" 
+upgrade = "flask db upgrade" 
+
+[requires]
+python_version = "3.10"

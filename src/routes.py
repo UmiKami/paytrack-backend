@@ -418,7 +418,7 @@ def delete_payroll(payroll_id):
     
     return jsonify(message="Payroll deleted successfully!")
 
-@api.route("/employee/dashboard", mehtods=["GET"])
+@api.route("/employee/dashboard", methods=["GET"])
 @jwt_required()
 def employee_dashboard():
     employee_id = get_jwt_identity()

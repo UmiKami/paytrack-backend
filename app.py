@@ -40,7 +40,7 @@ app.config['FLASK_ADMIN_FLUID_LAYOUT'] = True
 
 @app.route("/")
 def redirect_to_main():
-    return redirect("/v1", code=302)
+    return redirect("/v1/hello", code=302)
 
 
 @app.before_request

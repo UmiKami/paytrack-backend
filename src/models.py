@@ -115,8 +115,11 @@ class Payroll(db.Model):
     employee_id = db.Column(db.Integer, db.ForeignKey(
         'employees.employee_id', ondelete='CASCADE'), nullable=False)
     pay_date = db.Column(db.Date, nullable=False)
+    hours_worked = db.Column(db.Numeric(5, 2), nullable=False)
+    hourly_rate = db.Column(db.Numeric(10, 2), nullable=False)
     gross_salary = db.Column(db.Numeric(10, 2), nullable=False)
     net_salary = db.Column(db.Numeric(10, 2), nullable=False)
+    tax_deduction = db.Column(db.Numeric(10, 2), nullable=False)
 
     def serialize(self):
         return {
@@ -124,5 +127,8 @@ class Payroll(db.Model):
             'employee_id': self.employee_id,
             'pay_date': self.pay_date.isoformat(),
             'gross_salary': float(self.gross_salary),
-            'net_salary': float(self.net_salary)
+            'net_salary': float(self.net_salary),
+            'tax_deduction': float(self.tax_deduction),
+            'hours_worked': float(self.hours_worked),
+            'hourly_rate': float(self.hourly_rate)
         }

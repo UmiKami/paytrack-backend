@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-from src.models import db, User, Employee, PasswordResetToken
+from src.models import db, User, Employee, PasswordResetToken, Payroll
 from flask_jwt_extended import create_access_token
 from flask_jwt_extended import get_jwt_identity
 from flask_jwt_extended import jwt_required
@@ -300,3 +300,31 @@ def password_reset(token):
     db.session.commit()
     
     return jsonify(message="Password reset successfully!")
+
+@api.route("/admin/employee/<int:employee_id>/payroll/create", methods=["POST"])
+@jwt_required()
+def create_payroll(employee_id):
+    current_user_id = get_jwt_identity()
+    
+    user = User.query.get(current_user_id)
+    
+    if user.role != "admin":
+        return jsonify(message="You are not authorized to perform this action"), 403
+        
+    employee = Employee.query.get(employee_id)
+    
+    if employee is None:
+        return jsonify(message="Employee not found"), 404
+        
+    request_body = request.get_json()
+    
+    pay_date = request_body.get("pay_date")
+    hours_worked = request_body.get("hours_worked")
+    hourly_rate = request_body.get("hourly_rate")
+    tax_deduction = request_body.get("tax_deduction")
+    gross_salary = hours_worked * hourly_rate
+    net_salary = gross_salary - tax_deduction
+    
+    new_payroll = Payroll(employee_id=employee_id, pay_date=pay_date, hours_worked=hours_worked,
+                          hourly_rate=hourly_rate, tax_deduction=tax_deduction, gross_salary=gross_salary, net_salary=net_salary)
+    

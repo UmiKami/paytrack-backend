@@ -21,6 +21,7 @@ start = "flask -A app run --debug --host=0.0.0.0"
 init = "flask db init" 
 migrate = "flask db migrate" 
 upgrade = "flask db upgrade" 
+gunicorn = "gunicorn app:app --bind 0.0.0.0:5000"
 
 [requires]
 python_version = "3.10"

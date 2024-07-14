@@ -1,5 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
+from datetime import datetime, timezone
 
 db = SQLAlchemy()
 
@@ -13,7 +13,7 @@ class User(db.Model):
     security_question_2 = db.Column(db.String(255))
     security_answer_2 = db.Column(db.String(255))
     role = db.Column(db.String(50), nullable=False)  # 'admin' or 'employee'
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.now(tz=timezone.utc))
 
     def serialize(self):
         return {
@@ -31,6 +31,7 @@ class Employee(db.Model):
         'users.user_id', ondelete='CASCADE'), unique=True)
     first_name = db.Column(db.String(100), nullable=False)
     last_name = db.Column(db.String(100), nullable=False)
+    personal_email = db.Column(db.String(255), unique=True, nullable=False)
     address = db.Column(db.Text)
     phone = db.Column(db.String(20))
     position = db.Column(db.String(100))
@@ -41,6 +42,7 @@ class Employee(db.Model):
         return {
             'employee_id': self.employee_id,
             'user_id': self.user_id,
+            'personal_email': self.personal_email,
             'first_name': self.first_name,
             'last_name': self.last_name,
             'address': self.address,
@@ -54,8 +56,8 @@ class Employee(db.Model):
 class PasswordResetToken(db.Model):
     __tablename__ = 'password_reset_tokens'
     token_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    user_id = db.Column(db.Integer, db.ForeignKey(
-        'users.user_id', ondelete='CASCADE'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.user_id', ondelete='CASCADE'), nullable=True)
+    employee_id = db.Column(db.Integer, db.ForeignKey('employees.employee_id', ondelete='CASCADE'), nullable=False)
     token = db.Column(db.String(255), unique=True, nullable=False)
     expires_at = db.Column(db.DateTime, nullable=False)
     used = db.Column(db.Boolean, default=False)

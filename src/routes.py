@@ -150,3 +150,103 @@ def add_employee():
     
     return jsonify(message="Employee added successfully!"), 201
 
+@api.route("/mangage/employee/<int:employee_id>", methods=["GET"])
+@jwt_required()
+def get_employee(employee_id):
+    current_user_id = get_jwt_identity()
+    
+    user = User.query.get(current_user_id)
+    
+    if user.role != "admin":
+        return jsonify(message="You are not authorized to perform this action"), 403
+        
+    employee = Employee.query.get(employee_id)
+    
+    if employee is None:
+        return jsonify(message="Employee not found"), 404
+        
+    return jsonify(employee.serialize())
+
+@api.route("/manage/employee/<int:employee_id>", methods=["PUT"])
+@jwt_required()
+def update_employee(employee_id):
+    current_user_id = get_jwt_identity()
+    
+    user = User.query.get(current_user_id)
+    
+    if user.role != "admin":
+        return jsonify(message="You are not authorized to perform this action"), 403
+        
+    employee = Employee.query.get(employee_id)
+    
+    if employee is None:
+        return jsonify(message="Employee not found"), 404
+        
+    request_body = request.get_json()
+    
+    email = request_body.get("email")
+    
+    if email:
+        employee.personal_email = email
+    
+    first_name = request_body.get("first_name")
+    
+    if first_name:
+        employee.first_name = first_name
+    
+    last_name = request_body.get("last_name")
+    
+    if last_name:
+        employee.last_name = last_name
+    
+    address = request_body.get("address")
+    
+    if address:
+        employee.address = address
+    
+    phone = request_body.get("phone")
+    
+    if phone:
+        employee.phone = phone
+    
+    position = request_body.get("position")
+    
+    if position:
+        employee.position = position
+    
+    department = request_body.get("department")
+    
+    if department:
+        employee.department = department
+    
+    start_date = request_body.get("start_date")
+    
+    if start_date:
+        employee.start_date = start_date
+    
+    db.session.commit()
+    
+    return jsonify(message="Employee updated successfully!")
+
+@api.route("/manage/employee/<int:employee_id>", methods=["DELETE"])
+@jwt_required()
+def delete_employee(employee_id):
+    current_user_id = get_jwt_identity()
+    
+    user = User.query.get(current_user_id)
+    
+    if user.role != "admin":
+        return jsonify(message="You are not authorized to perform this action"), 403
+        
+    employee = Employee.query.get(employee_id)
+    
+    if employee is None:
+        return jsonify(message="Employee not found"), 404
+    
+    employee_user = User.query.get(employee.user_id)
+        
+    db.session.delete(employee)
+    db.session.delete(employee_user)
+    db.session.commit()
+    
+    return jsonify(message="Employee deleted successfully!")

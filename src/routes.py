@@ -143,7 +143,7 @@ def add_employee():
     db.session.add(token)
     db.session.commit()
     
-    send_email(url=f"{os.getenv('FRONT_URL')}/employee/password-creation?token={password_reset_token}", name=f"{first_name} {last_name}", recipient=email)
+    send_email(url=f"{os.getenv('FRONT_URL')}/employee/register?token={password_reset_token}", name=f"{first_name} {last_name}", recipient=email)
     
     
     return jsonify(message="Employee added successfully!"), 201

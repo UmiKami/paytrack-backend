@@ -77,6 +77,8 @@ def register_employee():
     employee = Employee.query.get(get_jwt_identity())
     employee.user_id = user.user_id
     
+    db.session.commit()
+    
     return jsonify(message="Employee user created successfully!")
 
 @api.route("/login", methods=["POST"])
@@ -250,6 +252,12 @@ def delete_employee(employee_id):
         return jsonify(message="You are not authorized to perform this action"), 403
 
     employee = Employee.query.get(employee_id)
+    
+    payrolls = Payroll.query.filter_by(employee_id=employee_id).all()
+    
+    for payroll in payrolls:
+        db.session.delete(payroll)
+        db.session.commit()
 
     if employee is None:
         return jsonify(message="Employee not found"), 404
@@ -262,8 +270,12 @@ def delete_employee(employee_id):
 
         db.session.delete(employee)
         db.session.commit()
+        db.session.refresh(employee)
+        
+        employee_list = Employee.query.all()
+        employee_list = [e.serialize() for e in employee_list]
 
-        return jsonify(message="Employee deleted successfully!")
+        return jsonify(message="Employee deleted successfully!", employee_list = employee_list)
     except Exception as e:
         db.session.rollback()
         return jsonify(message=f"Failed to delete employee: {str(e)}"), 500
@@ -450,9 +462,9 @@ def delete_payroll(payroll_id):
 @api.route("/employee/dashboard", methods=["GET"])
 @jwt_required()
 def employee_dashboard():
-    employee_id = get_jwt_identity()
-    
-    employee = Employee.query.get(employee_id)
+    user_id = get_jwt_identity()
+
+    employee = Employee.query.filter_by(user_id=user_id).first()
     
     if employee is None:
         return jsonify(message="Employee not found"), 404

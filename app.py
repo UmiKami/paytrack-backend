@@ -7,6 +7,7 @@ from src.models import db
 from src.admin import setup_admin
 from src.routes import api
 from flask_jwt_extended import JWTManager
+from flask_cors import CORS
 
 
 import os
@@ -14,6 +15,8 @@ import os
 load_dotenv()
 
 app = Flask(__name__)
+
+CORS(app)
 
 app.register_blueprint(api, url_prefix='/v1')
 

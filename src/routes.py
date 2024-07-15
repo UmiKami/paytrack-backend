@@ -7,8 +7,12 @@ from src.send_email import send_email
 from hashlib import sha256
 import os
 from datetime import datetime, timezone, timedelta
+from flask_cors import CORS
+
 
 api = Blueprint('api', __name__)
+
+CORS(api)
 
 @api.route("/hello", methods=["GET"])
 def index():
@@ -38,7 +42,10 @@ def regisster_admin():
 @api.route("/employee/register", methods=["POST"])
 @jwt_required()
 def register_employee():
+    print("identity from regtistre",get_jwt_identity())
     token = PasswordResetToken.query.filter_by(employee_id=get_jwt_identity()).first()
+    
+    print("token",token)
     
     if token.expires_at.tzinfo is None:
         token.expires_at = token.expires_at.replace(tzinfo=timezone.utc)
@@ -88,7 +95,7 @@ def login_admin():
         
     access_token = create_access_token(identity=user.user_id, additional_claims={"role": user.role})
     
-    return jsonify(access_token=access_token)
+    return jsonify(access_token=access_token, role=user.role)
 
 @api.route("/manage/employee", methods=["GET"])
 @jwt_required()
@@ -136,17 +143,22 @@ def add_employee():
     db.session.commit()
     db.session.refresh(employee)
     
+    print("employee.employee_id", employee.employee_id) 
+    
     password_reset_token = create_access_token(identity=employee.employee_id)
     
     token = PasswordResetToken(employee_id=employee.employee_id, token=password_reset_token, expires_at=datetime.now(tz=timezone.utc) + timedelta(hours=24))
     
     db.session.add(token)
     db.session.commit()
+    db.session.refresh(token)
     
     send_email(url=f"{os.getenv('FRONT_URL')}/employee/register?token={password_reset_token}", name=f"{first_name} {last_name}", recipient=email)
     
+    all_employees = Employee.query.all()
+    all_employees = [e.serialize() for e in all_employees]
     
-    return jsonify(message="Employee added successfully!"), 201
+    return jsonify(message="Employee added successfully!", employee_list =  all_employees), 201
 
 @api.route("/manage/employee/<int:employee_id>", methods=["GET"])
 @jwt_required()
@@ -339,8 +351,8 @@ def create_payroll(employee_id):
     hours_worked = request_body.get("hours_worked")
     hourly_rate = request_body.get("hourly_rate")
     tax_deduction = request_body.get("tax_deduction")
-    gross_salary = hours_worked * hourly_rate
-    net_salary = gross_salary - tax_deduction
+    gross_salary = float(hours_worked) * float(hourly_rate)
+    net_salary = float(gross_salary) - float(tax_deduction)
     
     new_payroll = Payroll(employee_id=employee_id, pay_date=pay_date, hours_worked=hours_worked,
                           hourly_rate=hourly_rate, tax_deduction=tax_deduction, gross_salary=gross_salary, net_salary=net_salary)
